@@ -157,6 +157,40 @@ const templatePool = {
 
 // 搜索映射库（你PPT里的句子语义映射）
 const sentenceMap = {
+    // 职场/抱怨类
+    "最近工作太累了": {
+        casual: [
+            {id: "Kerjaan akhir-akhir ini bikin gue capek banget, sumpah.", cn: "最近的工作真的让我累死了，我发誓。", en: "Work lately makes me so tired, I swear."},
+            {id: "Beban kerjaan lagi numpuk banget nih, gila.", cn: "工作负担又堆得像山一样了，天哪。", en: "The workload is piling up like crazy."}
+        ],
+        grammar: { attr:"Pekerjaan yang sangat melelahkan.", nounClause:"Yang bikin capek adalah kerjaannya.", concession:"Meskipun capek, kita harus lanjut.", reason:"Karena kerjaan numpuk, gue capek.", time:"Setelah kerja keras, gue butuh istirahat.", purpose:"Gue kerja lembur agar cepat selesai.", result:"Kerjaan menumpuk sehingga gue stres." }
+    },
+    // 社交/出去玩
+    "周末去喝咖啡吗": {
+        casual: [
+            {id: "Weekend ini nongkrong di kafe, yuk!", cn: "这周末去咖啡馆聚聚吧！", en: "Let's hang out at the cafe this weekend!"},
+            {id: "Mabar ke coffee shop sore ini gimana?", cn: "今天下午一起去咖啡店玩怎么样？", en: "How about hanging out at the coffee shop this afternoon?"}
+        ],
+        grammar: { attr:"Kafe yang akan kita datangi akhir pekan ini.", nounClause:"Yang mau kita lakukan adalah nongkrong.", concession:"Meskipun hujan, kita tetap nongkrong.", reason:"Karena butuh healing, kita ke kafe.", time:"Setelah selesai kerja, kita ke kafe.", purpose:"Kita ke kafe agar bisa santai.", result:"Kita ke kafe sehingga mood jadi bagus." }
+    },
+    // 表达情绪/震惊
+    "真的假的，不是吧": {
+        casual: [
+            {id: "Gila sih, serius lo? Nggak mungkin!", cn: "疯了吧，你说真的？不可能！", en: "Crazy, are you serious? No way!"},
+            {id: "Jangan bohong deh, masa iya sih?", cn: "别骗人了，真的假的啊？", en: "Don't lie, is that really true?"},
+            {id: "No cap? Gue nggak percaya.", cn: "没骗人？我真不信。", en: "No cap? I don't believe it."}
+        ],
+        grammar: { attr:"Hal yang tidak bisa dipercaya.", nounClause:"Yang mengejutkan adalah berita itu.", concession:"Meskipun aneh, itu kenyataan.", reason:"Karena itu tidak masuk akal, gue kaget.", time:"Saat dengar kabar itu, gue kaget.", purpose:"Gue tanya agar jelas.", result:"Dia bilang begitu sehingga gue kaget." }
+    },
+    // 拒绝/不满
+    "我不想管了/随便吧": {
+        casual: [
+            {id: "Terserah deh, gue udah males ngurusin.", cn: "随便吧，我已经懒得管了。", en: "Whatever, I'm too lazy to care."},
+            {id: "Bodo amat sih, mau dia apa.", cn: "爱咋咋地吧，随便他。", en: "I don't give a damn, whatever he wants."}
+        ],
+        grammar: { attr:"Hal yang tidak ingin diurus lagi.", nounClause:"Yang gue pilih adalah diam.", concession:"Meskipun salah, gue bodo amat.", reason:"Karena gue kesel, gue nggak peduli.", time:"Setelah semua ini, gue bodo amat.", purpose:"Gue diam agar tidak berdebat.", result:"Dia keras kepala sehingga gue menyerah." }
+    }
+};
   "我们需要先定下清晰目标":{
     casual:[
       {id:"Kita perlu tetapkan tujuan yang jelas nih.",cn:"我们需要先定下清晰目标呀",en:"We need to set clear goals."},
