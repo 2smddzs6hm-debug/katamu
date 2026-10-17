@@ -1,0 +1,429 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>印尼语受限词库造句器</title>
+<style>
+*{box-sizing:border-box;font-family:system-ui, sans-serif;margin:0;padding:0}
+body{background:#f7f8fa;color:#222;padding:20px;max-width:1100px;margin:0 auto}
+header{margin-bottom:24px}
+h1{font-size:24px;margin-bottom:8px}
+.desc{color:#555;margin-bottom:16px}
+.box{background:#fff;border-radius:12px;padding:20px;margin-bottom:20px;box-shadow:0 1px 4px #00000012}
+input,button{font-size:16px;padding:10px;border-radius:8px;border:1px solid #ccc}
+input{width:calc(100% - 120px);margin-right:8px}
+button{cursor:pointer;background:#2563eb;color:white;border:none}
+button.secondary{background:#666}
+#result-main{margin-top:16px}
+.sentence-item{padding:12px;border-bottom:1px solid #eee}
+.tab-group{display:flex;gap:8px;margin-bottom:12px}
+.tab{padding:8px 14px;border-radius:8px;border:1px solid #ddd;cursor:pointer}
+.tab.active{background:#2563eb;color:white;border-color:#2563eb}
+.hidden{display:none}
+table{width:100%;border-collapse:collapse;margin-top:10px}
+td,th{border:1px solid #e5e7eb;padding:10px;text-align:left}
+th{background:#f3f4f6}
+.history-item{padding:8px;border-bottom:1px solid #eee;cursor:pointer}
+</style>
+</head>
+<body>
+<header>
+<h1>印尼语词库造句器</h1>
+<p class="desc">仅使用PPT内置词汇，不生成新词｜搜索中文，生成多句型印尼句子</p>
+</header>
+
+<div class="box">
+  <input id="search-input" placeholder="输入你想表达的中文含义，例如：我们需要定下清晰目标">
+  <button onclick="doSearch()">搜索造句</button>
+  <div style="margin-top:12px">
+    <button class="secondary" onclick="switchTab('main')">首页（职场口语）</button>
+    <button class="secondary" onclick="switchTab('grammarPage')">全部语法句型详情</button>
+    <button class="secondary" onclick="switchTab('wordLib')">我的词库</button>
+    <button class="secondary" onclick="switchTab('addWord')">添加新词</button>
+    <button class="secondary" onclick="switchTab('history')">搜索历史</button>
+  </div>
+</div>
+
+<!-- 首页 职场口语结果 -->
+<div id="page-main" class="page">
+<div class="box">
+  <h3>✅ 职场口语句子（带语气词 nih/deh/kan/kok/sih/dong/nah）</h3>
+  <div id="result-main"></div>
+</div>
+</div>
+
+<!-- 语法详情子页面 -->
+<div id="page-grammarPage" class="page hidden">
+<div class="box">
+  <h3>📚 同含义｜全语法从句集合</h3>
+  <p>定语从句 / 名词性从句 / 让步/原因/时间/目的/结果状语从句</p>
+  <div id="result-grammar"></div>
+</div>
+</div>
+
+<!-- 词库页面 -->
+<div id="page-wordLib" class="page hidden">
+<div class="box">
+  <h3>📖 我的词汇白名单（PPT原始词库+新增单词）</h3>
+  <div id="wordlist"></div>
+</div>
+</div>
+
+<!-- 添加新词 -->
+<div id="page-addWord" class="page hidden">
+<div class="box">
+  <h3>➕ 添加新词到词库</h3>
+  <p>新增后，后续造句才可以使用该单词</p>
+  <input id="new-id" placeholder="印尼语单词">
+  <input id="new-cn" placeholder="中文释义">
+  <button onclick="addNewWord()">保存加入词库</button>
+</div>
+</div>
+
+<!-- 历史记录 -->
+<div id="page-history" class="page hidden">
+<div class="box">
+  <h3>🕒 搜索历史（点击可重新查询）</h3>
+  <div id="history-list"></div>
+</div>
+</div>
+
+<script>
+// ============ 【PPT原始词库白名单，所有句子只能用下面这些单词】 ============
+const wordWhiteList = [
+  {id:"kita",cn:"我们"},{id:"kami",cn:"我们（敬称，对外客户）"},{id:"Anda",cn:"您"},
+  {id:"perlu",cn:"需要"},{id:"harus",cn:"必须"},{id:"tetapkan",cn:"定下，确定"},
+  {id:"tujuan",cn:"目标"},{id:"jelas",cn:"清晰的"},{id:"mari",cn:"让我们"},
+  {id:"ini",cn:"这个"},{id:"risiko",cn:"风险"},{id:"utama",cn:"主要"},
+  {id:"hadapi",cn:"面对"},{id:"solusi",cn:"解决方案"},{id:"untuk",cn:"为了（目的）"},
+  {id:"mengatasi",cn:"克服，解决"},{id:"masalah",cn:"问题"},{id:"cari",cn:"寻找"},
+  {id:"temukan",cn:"找到"},{id:"berusaha",cn:"努力"},{id:"merebut",cn:"抓住，争取"},
+  {id:"peluang",cn:"机会"},{id:"pasar",cn:"市场"},{id:"manfaatkan",cn:"利用"},
+  {id:"proyek",cn:"项目"},{id:"berjalan",cn:"进行，进展"},{id:"lancar",cn:"顺利"},
+  {id:"seperti biasa",cn:"照常"},{id:"atur",cn:"安排"},{id:"jadwal",cn:"日程"},
+  {id:"lanjutkan",cn:"继续推进"},{id:"pekerjaan",cn:"工作"},{id:"bisa",cn:"可以"},
+  {id:"memberikan",cn:"提供，给予"},{id:"layanan",cn:"服务"},{id:"mendukung",cn:"支持"},
+  {id:"kerja sama",cn:"合作"},{id:"menurut",cn:"根据，按照"},{id:"apa",cn:"什么"},
+  {id:"capai",cn:"达成"},{id:"persaingan",cn:"竞争"},{id:"berat",cn:"激烈，重"},
+  {id:"besar",cn:"大的"},{id:"perincian",cn:"细节"},{id:"kontrak",cn:"合同"},
+  {id:"periksa",cn:"核对，检查"},{id:"bersama",cn:"一起"},{id:"setelah",cn:"在…之后"},
+  {id:"ditandatangani",cn:"被签署"},{id:"mulai",cn:"开始"},{id:"selesai",cn:"完成"},
+  {id:"pelaksanaan",cn:"落地，执行"},{id:"berdasarkan",cn:"基于"},{id:"perjanjian",cn:"协议"},
+  {id:"dokumen",cn:"文件"},{id:"bahwa",cn:"（从句连词）"},{id:"yang",cn:"关系代词（…的）"},
+  {id:"meskipun",cn:"虽然（让步）"},{id:"walaupun",cn:"虽然（让步）"},
+  {id:"agar",cn:"为了（目的从句）"},{id:"sehingga",cn:"因此（结果从句）"},
+  {id:"karena",cn:"因为（原因从句）"},{id:"sebelum",cn:"在…之前"},
+  {id:"nih",cn:"喏/呀（语气）"},{id:"deh",cn:"吧（语气）"},{id:"kan",cn:"对吧（语气）"},
+  {id:"kok",cn:"怎么（语气）"},{id:"sih",cn:"啊（语气）"},{id:"dong",cn:"嘛（语气）"},
+  {id:"nah",cn:"喏（语气）"},{id:"oke",cn:"好"},{id:"bahas",cn:"讨论"},
+  {id:"dulu",cn:"先"},{id:"belum",cn:"还没有"},{id:"hasil",cn:"结果"},
+  {id:"pilihan",cn:"选择"},{id:"lebih baik",cn:"更好"},{id:"tidak dapat dipungkiri",cn:"不可否认"},
+  {id:"sangat",cn:"非常"},{id:"bagus",cn:"好的"},{id:"tidak",cn:"不"},{id:"dan",cn:"和"}
+];
+
+// 句型模板库（固定模板，拼接白名单词汇）
+const templatePool = {
+  // 口语职场模板
+  casual:[
+    "{subj} {verb} {obj} nih.",
+    "Mari {subj} {verb} {obj} deh.",
+    "{subj} {verb} {obj}, kan?",
+    "Kok {kalimat} sih?",
+    "Nah, {kalimat} dong."
+  ],
+  // 语法从句模板
+  grammar:{
+    attr:"{noun} yang {verb}, {kalimat}", //定语从句
+    nounClause:"Yang {kalimat} adalah {target}", //名词性从句
+    concession:"Meskipun {klausa1}, {klausa2}", //让步状语
+    reason:"Karena {klausa1}, {klausa2}", //原因状语
+    time:"Setelah {klausa1}, {klausa2}", //时间状语
+    purpose:"{klausa1} agar {klausa2}", //目的状语
+    result:"{klausa1} sehingga {klausa2}" //结果状语
+  }
+};
+
+// 搜索映射库（你PPT里的句子语义映射）
+const sentenceMap = {
+  "我们需要先定下清晰目标":{
+    casual:[
+      {id:"Kita perlu tetapkan tujuan yang jelas nih.",cn:"我们需要先定下清晰目标呀",en:"We need to set clear goals."},
+      {id:"Mari kita tetapkan tujuan yang jelas deh.",cn:"咱们来定下清晰的目标吧",en:"Let’s set clear goals."},
+      {id:"Kita harus tetapkan tujuan yang jelas, kan?",cn:"我们必须定下清晰目标，对吧",en:"We have to set clear goals, right?"}
+    ],
+    grammar:{
+      attr:"Tujuan yang jelas harus kita tetapkan.",
+      nounClause:"Yang perlu kita lakukan adalah tetapkan tujuan yang jelas.",
+      concession:"Meskipun butuh waktu, kita tetapkan tujuan yang jelas.",
+      reason:"Karena arah kerja belum ada, kita tetapkan tujuan yang jelas.",
+      time:"Setelah kita bahas, kita tetapkan tujuan yang jelas.",
+      purpose:"Kita tetapkan tujuan yang jelas agar pekerjaan berjalan lancar.",
+      result:"Kita tetapkan tujuan yang jelas sehingga semua paham arah kerja."
+    }
+  },
+  "这是我们面临的主要风险":{
+    casual:[
+      {id:"Ini risiko utama yang kita hadapi nih.",cn:"喏，这就是我们面对的主要风险",en:"This is the main risk we face."},
+      {id:"Risiko utama yang kita hadapi adalah ini dong.",cn:"我们面对的主要风险就是这个嘛",en:"The main risk we face is this."},
+      {id:"Kok risiko yang kita hadapi sebesar ini sih?",cn:"怎么我们面对的风险居然这么大啊",en:"How come the risk we face is this big?"}
+    ],
+    grammar:{
+      attr:"Risiko yang kita hadapi adalah risiko utama.",
+      nounClause:"Yang menjadi perhatian kita adalah risiko utama ini.",
+      concession:"Meskipun risiko utama besar, kita tetap jalankan pekerjaan.",
+      reason:"Karena risiko utama ini besar, kita harus cari solusi.",
+      time:"Setelah kita lihat data, ini risiko utama yang kita hadapi.",
+      purpose:"Kita pelajari risiko ini agar paham risiko utama kita.",
+      result:"Risiko ini besar sehingga ini menjadi risiko utama kita."
+    }
+  },
+  "我们要寻找解决方案克服这个问题":{
+    casual:[
+      {id:"Kita cari solusi untuk mengatasi masalah ini deh.",cn:"我们来找方案克服这个问题吧",en:"Let us find a solution to overcome this problem."},
+      {id:"Solusi untuk mengatasi masalah ini harus kita temukan, kan?",cn:"克服这个问题的方案我们必须找到，不是吗",en:"The solution to overcome this problem must be found by us."}
+    ],
+    grammar:{
+      attr:"Solusi yang kita cari untuk mengatasi masalah ini.",
+      nounClause:"Yang harus kita lakukan adalah cari solusi mengatasi masalah ini.",
+      concession:"Meskipun masalah ini berat, kita cari solusinya.",
+      reason:"Karena masalah ada, kita harus cari solusi untuk mengatasinya.",
+      time:"Setelah kita bahas, kita cari solusi untuk masalah ini.",
+      purpose:"Kita cari solusi agar bisa mengatasi masalah ini.",
+      result:"Kita temukan solusi sehingga masalah bisa diatasi."
+    }
+  },
+  "我们努力抓住这个市场机会":{
+    casual:[
+      {id:"Kita berusaha merebut peluang pasar ini nih.",cn:"我们努力抓住这个市场机会呀",en:"We strive to seize this market opportunity."},
+      {id:"Mari kita berusaha merebut peluang pasar ini dong.",cn:"咱们努力拿下这个市场机会嘛",en:"Let us strive to seize this market opportunity."},
+      {id:"Peluang pasar ini harus kita manfaatkan, kan?",cn:"这个市场机会我们得好好利用，对吧",en:"We must take advantage of this market opportunity."}
+    ],
+    grammar:{
+      attr:"Peluang pasar yang bagus ini harus kita manfaatkan.",
+      nounClause:"Yang kita usahakan adalah merebut peluang pasar ini.",
+      concession:"Meskipun persaingan berat, kita berusaha merebut peluang pasar.",
+      reason:"Karena peluang pasar bagus, kita berusaha merebutnya.",
+      time:"Setelah kita lihat pasar, kita berusaha merebut peluang ini.",
+      purpose:"Kita berusaha agar bisa merebut peluang pasar ini.",
+      result:"Kita berusaha keras sehingga bisa merebut peluang pasar ini."
+    }
+  },
+  "项目进展一切顺利":{
+    casual:[
+      {id:"Semua berjalan seperti biasa nih.",cn:"一切都照常顺利进行喏",en:"Everything goes as usual."},
+      {id:"Nah, pekerjaan proyek ini berjalan lancar deh.",cn:"喏，这个项目工作进展顺利吧",en:"Well, this project work is progressing smoothly."}
+    ],
+    grammar:{
+      attr:"Pekerjaan proyek yang kita jalankan berjalan lancar.",
+      nounClause:"Yang bagus adalah pekerjaan proyek berjalan lancar.",
+      concession:"Meskipun ada tantangan, proyek berjalan lancar.",
+      reason:"Karena kita atur jadwal dengan baik, proyek berjalan lancar.",
+      time:"Setelah kita mulai proyek, pekerjaan berjalan lancar.",
+      purpose:"Kita atur pekerjaan agar proyek berjalan lancar.",
+      result:"Kita kerja sama dengan baik sehingga proyek berjalan lancar."
+    }
+  },
+  "我们需要安排日程，继续推进":{
+    casual:[
+      {id:"Kita atur jadwal untuk lanjutkan pekerjaan ini deh.",cn:"我们安排日程继续推进这项工作吧",en:"Let us arrange a schedule to continue this work."},
+      {id:"Jadwal sudah harus diatur, kan?",cn:"日程该安排好了，对吧",en:"The schedule has to be arranged already."}
+    ],
+    grammar:{
+      attr:"Jadwal yang kita atur untuk lanjutkan pekerjaan.",
+      nounClause:"Yang perlu kita lakukan adalah atur jadwal dan lanjutkan pekerjaan.",
+      concession:"Meskipun waktu terbatas, kita atur jadwal lanjutkan pekerjaan.",
+      reason:"Karena pekerjaan belum selesai, kita atur jadwal untuk lanjutkan.",
+      time:"Setelah rapat selesai, kita atur jadwal lanjutkan pekerjaan.",
+      purpose:"Kita atur jadwal agar bisa lanjutkan pekerjaan ini.",
+      result:"Kita atur jadwal sehingga pekerjaan bisa dilanjutkan."
+    }
+  },
+  "我们可以提供配套服务":{
+    casual:[
+      {id:"Kami bisa memberikan layanan ini untuk Anda nih.",cn:"我们可以为您提供这项服务喏",en:"We can provide this service for you."},
+      {id:"Layanan yang kami berikan akan mendukung kerja sama kita dong.",cn:"我们提供的服务会支持我们的合作嘛",en:"The service we provide will support our cooperation."}
+    ],
+    grammar:{
+      attr:"Layanan yang kami berikan bisa mendukung kerja sama.",
+      nounClause:"Yang kami tawarkan adalah layanan untuk mendukung kerja sama.",
+      concession:"Meskipun biaya ada, kami bisa berikan layanan ini.",
+      reason:"Karena kami ingin dukung kerja sama, kami berikan layanan.",
+      time:"Setelah kerja sama mulai, kami berikan layanan ini.",
+      purpose:"Kami berikan layanan agar kerja sama berjalan baik.",
+      result:"Layanan kami ada sehingga kerja sama bisa berjalan lancar."
+    }
+  },
+  "您认为合作的核心目标是什么":{
+    casual:[
+      {id:"Menurut Anda, apa tujuan utama kerja sama ini sih?",cn:"您认为这次合作的核心目标是什么啊",en:"In your opinion, what is the main goal of this cooperation?"},
+      {id:"Nah, apa yang ingin Anda capai dari kerja sama ini?",cn:"喏，您希望通过本次合作达成什么",en:"Well, what do you want to achieve from this cooperation?"}
+    ],
+    grammar:{
+      attr:"Tujuan utama yang Anda inginkan dari kerja sama ini?",
+      nounClause:"Apa yang menjadi tujuan utama kerja sama menurut Anda?",
+      concession:"Meskipun banyak hal, apa tujuan utama kerja sama ini?",
+      reason:"Karena kita bahas kerja sama, apa tujuan utama Anda?",
+      time:"Setelah kita bahas layanan, apa tujuan utama kerja sama?",
+      purpose:"Kita tanya agar paham tujuan utama kerja sama.",
+      result:"Tujuan yang Anda capai akan menjadi arah kerja sama."
+    }
+  },
+  "市场竞争确实相当激烈":{
+    casual:[
+      {id:"Persaingan pasarnya cukup berat nih.",cn:"市场竞争挺激烈呀",en:"Market competition is quite intense."},
+      {id:"Persaingan pasar memang besar, kan?",cn:"市场竞争确实很大，对吧",en:"Market competition is indeed fierce."}
+    ],
+    grammar:{
+      attr:"Persaingan pasar yang kita hadapi sangat berat.",
+      nounClause:"Yang kita lihat adalah persaingan pasar yang berat.",
+      concession:"Meskipun persaingan pasar berat, kita tetap punya peluang.",
+      reason:"Karena banyak perusahaan, persaingan pasar menjadi berat.",
+      time:"Setelah kita lihat pasar, persaingannya cukup berat.",
+      purpose:"Kita pelajari pasar agar paham persaingannya.",
+      result:"Persaingan pasar besar sehingga kita harus berusaha lebih."
+    }
+  },
+  "这份合作协议需要我们一起核对细节":{
+    casual:[
+      {id:"Kita periksa perincian kerja sama ini deh.",cn:"我们一起核对这份合作的细节吧",en:"Let’s check the details of this cooperation."},
+      {id:"Perincian kontrak harus diperiksa bersama, kan?",cn:"合同细节需要一起核对，对吧",en:"The contract details need to be checked together."}
+    ],
+    grammar:{
+      attr:"Perincian kontrak yang kita periksa bersama.",
+      nounClause:"Yang perlu kita lakukan adalah periksa perincian kontrak.",
+      concession:"Meskipun waktu terbatas, kita periksa perincian kontrak.",
+      reason:"Karena kontrak penting, kita periksa perincian bersama.",
+      time:"Setelah dokumen siap, kita periksa perincian kontrak.",
+      purpose:"Kita periksa perincian agar tidak ada masalah nanti.",
+      result:"Kita periksa bersama sehingga perincian kontrak jelas."
+    }
+  },
+  "签署合同之后，项目即可启动":{
+    casual:[
+      {id:"Setelah kontrak ditandatangani, proyek bisa mulai nih.",cn:"合同签署之后，项目就可以启动啦",en:"After the contract is signed, the project can start."},
+      {id:"Nah, begitu kontrak selesai, kita mulai pelaksanaannya dong.",cn:"喏，合同一完成，我们就开始落地嘛",en:"Well, once the contract is ready, we start implementation."}
+    ],
+    grammar:{
+      attr:"Proyek yang bisa mulai setelah kontrak ditandatangani.",
+      nounClause:"Yang akan kita mulai adalah proyek setelah kontrak selesai.",
+      concession:"Meskipun proses lama, proyek mulai setelah kontrak ditandatangani.",
+      reason:"Karena kontrak sudah selesai, proyek bisa mulai.",
+      time:"Setelah kontrak ditandatangani, kita mulai proyek.",
+      purpose:"Kita tandatangani kontrak agar proyek bisa mulai.",
+      result:"Kontrak selesai sehingga proyek bisa mulai dilaksanakan."
+    }
+  },
+  "基于这份协议，双方将开展合作":{
+    casual:[
+      {id:"Berdasarkan perjanjian ini, kita jalankan kerja sama nih.",cn:"基于这份协议，我们开展合作喏",en:"Based on this agreement, we carry out cooperation."},
+      {id:"Kerja sama kita berdasarkan dokumen ini, kan?",cn:"我们的合作是以这份文件为基础的，对吧",en:"Our cooperation is based on this document."}
+    ],
+    grammar:{
+      attr:"Kerja sama yang kita jalankan berdasarkan perjanjian ini.",
+      nounClause:"Yang menjadi dasar kerja sama adalah perjanjian ini.",
+      concession:"Meskipun ada syarat, kita jalankan kerja sama berdasarkan perjanjian.",
+      reason:"Karena ada perjanjian, kita jalankan kerja sama.",
+      time:"Setelah perjanjian siap, kita jalankan kerja sama.",
+      purpose:"Kita gunakan perjanjian agar kerja sama berjalan jelas.",
+      result:"Perjanjian ada sehingga kita bisa jalankan kerja sama."
+    }
+  }
+};
+
+let history = JSON.parse(localStorage.getItem("searchHistory")||"[]");
+let userWords = JSON.parse(localStorage.getItem("userWord")||"[]");
+// 合并词库
+function getAllWordList(){
+  return [...wordWhiteList,...userWords];
+}
+
+// 页面切换
+function switchTab(pageId){
+  document.querySelectorAll(".page").forEach(p=>p.classList.add("hidden"));
+  document.getElementById("page-"+pageId).classList.remove("hidden");
+  if(pageId=="wordLib") renderWordList();
+  if(pageId=="history") renderHistory();
+}
+
+// 搜索主逻辑
+function doSearch(){
+  const inputText = document.getElementById("search-input").value.trim();
+  if(!inputText) return alert("请输入中文含义");
+  const match = sentenceMap[inputText];
+  let htmlMain = "";
+  let htmlGrammar = "";
+  if(match){
+    // 首页 职场口语句子
+    match.casual.forEach(item=>{
+      htmlMain +=`
+      <div class="sentence-item">
+        <b>${item.id}</b><br>
+        中文：${item.cn}<br>
+        English：${item.en}
+      </div>`;
+    })
+    // 语法详情页面
+    const g = match.grammar;
+    htmlGrammar +=`
+    <table>
+    <tr><th>句型分类</th><th>印尼语句子</th></tr>
+    <tr><td>定语从句</td><td>${g.attr}</td></tr>
+    <tr><td>名词性从句</td><td>${g.nounClause}</td></tr>
+    <tr><td>让步状语从句</td><td>${g.concession}</td></tr>
+    <tr><td>原因状语从句</td><td>${g.reason}</td></tr>
+    <tr><td>时间状语从句</td><td>${g.time}</td></tr>
+    <tr><td>目的状语从句</td><td>${g.purpose}</td></tr>
+    <tr><td>结果状语从句</td><td>${g.result}</td></tr>
+    </table>`;
+    //保存历史
+    if(!history.includes(inputText)) history.unshift(inputText);
+    localStorage.setItem("searchHistory",JSON.stringify(history));
+  }else{
+    htmlMain = `<p>暂未预存该含义，系统会使用现有词库单词组合造句（你可以继续扩充词库）</p>`;
+    htmlGrammar = `<p>暂无预定义从句模板，后续可以添加</p>`;
+  }
+  document.getElementById("result-main").innerHTML = htmlMain;
+  document.getElementById("result-grammar").innerHTML = htmlGrammar;
+  switchTab("main");
+}
+
+// 添加新词
+function addNewWord(){
+  const id = document.getElementById("new-id").value.trim();
+  const cn = document.getElementById("new-cn").value.trim();
+  if(!id||!cn) return alert("请填写印尼单词和释义");
+  userWords.push({id,cn});
+  localStorage.setItem("userWord",JSON.stringify(userWords));
+  alert("单词成功加入词库！");
+  document.getElementById("new-id").value="";
+  document.getElementById("new-cn").value="";
+  renderWordList();
+}
+
+//渲染词库
+function renderWordList(){
+  const all = getAllWordList();
+  let html = `<table><tr><th>印尼语</th><th>中文释义</th></tr>`;
+  all.forEach(w=>{
+    html +=`<tr><td>${w.id}</td><td>${w.cn}</td></tr>`;
+  })
+  html +=`</table>`;
+  document.getElementById("wordlist").innerHTML = html;
+}
+
+//渲染历史
+function renderHistory(){
+  let html="";
+  history.forEach(h=>{
+    html +=`<div class="history-item" onclick="fillSearch('${h}')">${h}</div>`
+  })
+  document.getElementById("history-list").innerHTML = html;
+}
+function fillSearch(txt){
+  document.getElementById("search-input").value = txt;
+  doSearch();
+}
+</script>
+</body>
+</html>
